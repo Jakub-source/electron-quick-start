@@ -1,19 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
-    <link href="./styles.css" rel="stylesheet">
-    <title>Hello World!</title>
+    <meta charset="UTF-8" />
+    <link href="./styles.css" rel="stylesheet" />
+    <title>Electron Window</title>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>,
-    Chromium <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
+    <div id="unlock-message">Press Ctrl + X to Unlock</div>
 
-    <!-- You can also require other files to run in this process -->
+    <div class="drag-region">
+      <!-- Color Picker styled as a circle -->
+      <div style="position: absolute; top: 13px; right: 30px; z-index: 999999;">
+        <label style="position: relative; display: inline-block;">
+            <!-- Actual colour picker (hidden) -->
+            <input
+                type="color"
+                id="grid-color-picker"
+                value="#429351"
+                style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0; /* Hide default input */
+                    cursor: pointer;
+                "
+            />
+            <!-- Custom circular button with SVG -->
+            <div
+                style="
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    background: #429351;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+                    cursor: pointer;
+                "
+            >
+                <!-- SVG Icon (Example: Palette) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M36 8c2.5-.66 3.04-2.87 5-5s5.46 1.51 3.5 3.5s-4.35 2.55-4.9 4.9m-2 2L25 26.1c-.62.63-1.76.66-2.6.4c0 0-1.25 1.38-2 .5s.5-1.8.5-1.8c-.27-.81-.1-2 .5-2.6L34 10m-1 8h-7m12.8-3.6l1.9-1.9L34.8 7l-1.9 1.9z"/><path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="m25.1 26l2.14 2.22a.7.7 0 0 0 1 0l1.38-1.38c.28-.27.72-.27 1 0l7.81 7.81c.45.44.13 1.21-.5 1.2H10.1a.7.7 0 0 1-.58-1.1l9.5-13.62c.24-.32.69-.38 1-.13l1.48 1.5"/><path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M42.3 8.26c.13.39.2.81.2 1.24v29c0 2.21-1.79 4-4 4h-29c-2.21 0-4-1.79-4-4v-29c0-2.21 1.79-4 4-4h29c.19 0 .38.01.57.04"/></svg>
+            </div>
+        </label>
+    </div>
+    
+
+      <button id="lock-button" style="display:block; margin-right: 10px;">
+        <!-- Lock icon (SVG) -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            fill-rule="evenodd"
+            d="M12 3a4 4 0 0 0-4 4v3h12.5v12h-17V10H6V7a6 6 0 0 1 11.725-1.8l.3.954l-1.908.6l-.3-.954A4 4 0 0 0 12 3m-6.5 9v8h13v-8zM9 15h6v2H9z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <span></span>
+      </button>
+
+      <div>
+        <h3 style="color: white;">
+          Grid <span style="padding-left: 4px; font-size: x-large; color: rgb(12, 105, 55);"> X</span>
+        </h3>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: flex-end;">
+        <!-- Extra Lock Button or Div -->
+        <button style="display:block; margin-right: 10px; background-color: #282828;">
+          <div style="padding: 20px;"></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid-overlay"></div>
+
+    <div class="resize-indicator"></div>
+
+    <!-- Dropdown Button -->
+    <button id="dropdown-button" style="position: fixed; padding: 10px; bottom: 0px; left: 0px; background-color: #444; color: white; border: none; z-index: 9999;">
+      Grid Controls
+    </button>
+
+    <!-- Dropdown Menu -->
+    <div id="dropdown-menu" style="display: none; position: fixed; padding: 10px; bottom: 70px; left: 0px; background-color: #282828; width: 100%; z-index: 9999; border-radius: 5px;">
+      <!-- Opacity Slider -->
+      <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label for="opacity-slider" style="color: white; font-size: 14px; margin-right: 10px;">Opacity:</label>
+        <input
+          type="range"
+          id="opacity-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0.2"
+          style="width: 120px; height: 4px; border-radius: 5px; background: #444; outline: none; cursor: pointer; transition: background 0.3s ease-in-out;"
+          oninput="updateSlider(this)"
+        />
+        <span id="opacity-percentage" style="color: white; font-size: 14px; margin-left: 10px;">20%</span>
+      </div>
+
+      <!-- Horizontal Grids -->
+      <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label for="horizontal-slider" style="color: white; font-size: 14px; margin-right: 10px;">Horizontal Grids:</label>
+        <input
+          type="range"
+          id="horizontal-slider"
+          min="5"
+          max="50"
+          step="1"
+          value="20"
+          style="width: 120px; height: 4px; border-radius: 5px; background: #444; outline: none; cursor: pointer; transition: background 0.3s ease-in-out;"
+          oninput="updateGridCount(this, 'horizontal')"
+        />
+        <span id="horizontal-count" style="color: white; font-size: 14px; margin-left: 10px;">20</span>
+      </div>
+
+      <!-- Vertical Grids -->
+      <div style="display: flex; align-items: center;">
+        <label for="vertical-slider" style="color: white; font-size: 14px; margin-right: 10px;">Vertical Grids:</label>
+        <input
+          type="range"
+          id="vertical-slider"
+          min="5"
+          max="50"
+          step="1"
+          value="20"
+          style="width: 120px; height: 4px; border-radius: 5px; background: #444; outline: none; cursor: pointer; transition: background 0.3s ease-in-out;"
+          oninput="updateGridCount(this, 'vertical')"
+        />
+        <span id="vertical-count" style="color: white; font-size: 14px; margin-left: 10px;">20</span>
+      </div>
+    </div>
+
+    <script>
+      // Function to update the slider background and percentage for opacity slider
+      function updateSlider(slider) {
+        slider.style.background = `linear-gradient(to right, #32CD32 ${(slider.value * 100)}%, #444 ${(slider.value * 100)}%)`;
+        const percentage = Math.round(slider.value * 100);
+        document.getElementById('opacity-percentage').textContent = `${percentage}%`;
+      }
+
+      // Function to update the grid count values for horizontal/vertical grids
+      function updateGridCount(slider, type) {
+        const countSpan = document.getElementById(`${type}-count`);
+        countSpan.textContent = slider.value;
+      }
+
+      // Toggle dropdown menu visibility when the dropdown button is clicked
+      document.getElementById('dropdown-button').addEventListener('click', function() {
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        dropdownMenu.style.display = dropdownMenu.style.display === 'none' ? 'block' : 'none';
+      });
+
+      // Initialize opacity slider when the page is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        const slider = document.getElementById('opacity-slider');
+        updateSlider(slider); // Set the initial gradient and percentage
+      });
+    </script>
+
     <script src="./renderer.js"></script>
   </body>
 </html>
